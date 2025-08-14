@@ -12,12 +12,19 @@ const form = document.querySelector("#author-form");
 const paginationDiv = document.getElementById("pagination");
 let currentPage = 0;
 const limit = 5;
+const token = localStorage.getItem('token');
+function getAuthHeaders() {
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
+}
 function fetchAuthors() {
     return __awaiter(this, arguments, void 0, function* (page = 0) {
         const offset = page * limit;
         try {
-            const res = yield fetch(`/authors?limit=${limit}&offset=${offset}`);
-            const totalRes = yield fetch(`/authors/count`);
+            const res = yield fetch(`/authors?limit=${limit}&offset=${offset}`, { headers: getAuthHeaders() });
+            const totalRes = yield fetch(`/authors/count`, { headers: getAuthHeaders() });
             if (!res.ok || !totalRes.ok)
                 return;
             const authors = yield res.json();
@@ -28,6 +35,7 @@ function fetchAuthors() {
                     <td>${author.author_id}</td>
                     <td class="name">${author.name_author}</td>
                     <td>
+                        <button class="view-btn" data-id="${author.author_id}">View</button>
                         <button class="edit-btn" data-id="${author.author_id}">Edit</button>
                         <button class="delete-btn" data-id="${author.author_id}">Delete</button>
                     </td>
@@ -81,7 +89,7 @@ function saveEdit(author_id) {
         try {
             const res = yield fetch(`/authors/${author_id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({ name_author: updatedName }),
             });
             if (res.ok)
@@ -96,7 +104,8 @@ function cancelEdit(author_id, oldName) {
         return;
     row.querySelector('.name').textContent = oldName;
     row.querySelector('td:last-child').innerHTML =
-        `<button class="edit-btn" data-id="${author_id}">Edit</button>
+        `<button class="view-btn" data-id="${author_id}">View</button>
+         <button class="edit-btn" data-id="${author_id}">Edit</button>
          <button class="delete-btn" data-id="${author_id}">Delete</button>`;
 }
 function deleteAuthor(author_id) {
@@ -104,7 +113,10 @@ function deleteAuthor(author_id) {
         if (!confirm('Are you sure you want to delete?'))
             return;
         try {
-            const res = yield fetch(`/authors/${author_id}`, { method: 'DELETE' });
+            const res = yield fetch(`/authors/${author_id}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            });
             if (res.ok)
                 fetchAuthors(currentPage);
         }
@@ -113,7 +125,11 @@ function deleteAuthor(author_id) {
 }
 tableBody === null || tableBody === void 0 ? void 0 : tableBody.addEventListener('click', (e) => {
     const target = e.target;
-    if (target.classList.contains('edit-btn')) {
+    if (target.classList.contains('view-btn')) {
+        const id = Number(target.dataset.id);
+        window.location.href = `/authors/${id}`;
+    }
+    else if (target.classList.contains('edit-btn')) {
         const id = Number(target.dataset.id);
         startEdit(id);
     }
@@ -140,7 +156,7 @@ form === null || form === void 0 ? void 0 : form.addEventListener('submit', (e) 
     try {
         const res = yield fetch(`/authors`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ name_author: data.name.trim() }),
         });
         if (res.ok) {
@@ -150,5 +166,21 @@ form === null || form === void 0 ? void 0 : form.addEventListener('submit', (e) 
     }
     catch (_a) { }
 }));
+const pagePath = window.location.pathname.split('/').pop();
+document.querySelectorAll('nav a').forEach(link => {
+    var _a;
+    const href = (_a = link.getAttribute('href')) === null || _a === void 0 ? void 0 : _a.split('/').pop();
+    if (href === pagePath) {
+        link.classList.add('active');
+    }
+    else {
+        link.classList.remove('active');
+    }
+});
 fetchAuthors();
-export {};
+const logoutButton = document.getElementById('logout-button');
+logoutButton === null || logoutButton === void 0 ? void 0 : logoutButton.addEventListener('click', () => {
+    localStorage.removeItem('token');
+    window.location.href = '/';
+});
+export { };

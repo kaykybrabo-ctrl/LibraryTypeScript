@@ -7,12 +7,21 @@ const paginationDiv = document.getElementById("pagination") as HTMLDivElement | 
 let currentPage = 0;
 const limit = 5;
 
+const token = localStorage.getItem('token');
+
+function getAuthHeaders() {
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
+}
+
 async function fetchAuthors(page = 0): Promise<void> {
     const offset = page * limit;
 
     try {
-        const res = await fetch(`/authors?limit=${limit}&offset=${offset}`);
-        const totalRes = await fetch(`/authors/count`);
+        const res = await fetch(`/authors?limit=${limit}&offset=${offset}`, { headers: getAuthHeaders() });
+        const totalRes = await fetch(`/authors/count`, { headers: getAuthHeaders() });
         if (!res.ok || !totalRes.ok) return;
 
         const authors: Author[] = await res.json();
@@ -24,6 +33,7 @@ async function fetchAuthors(page = 0): Promise<void> {
                     <td>${author.author_id}</td>
                     <td class="name">${author.name_author}</td>
                     <td>
+                        <button class="view-btn" data-id="${author.author_id}">View</button>
                         <button class="edit-btn" data-id="${author.author_id}">Edit</button>
                         <button class="delete-btn" data-id="${author.author_id}">Delete</button>
                     </td>
@@ -79,7 +89,7 @@ async function saveEdit(author_id: number): Promise<void> {
     try {
         const res = await fetch(`/authors/${author_id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ name_author: updatedName }),
         });
         if (res.ok) fetchAuthors(currentPage);
@@ -92,7 +102,8 @@ function cancelEdit(author_id: number, oldName: string): void {
 
     (row.querySelector('.name') as HTMLElement).textContent = oldName;
     (row.querySelector('td:last-child') as HTMLElement).innerHTML =
-        `<button class="edit-btn" data-id="${author_id}">Edit</button>
+        `<button class="view-btn" data-id="${author_id}">View</button>
+         <button class="edit-btn" data-id="${author_id}">Edit</button>
          <button class="delete-btn" data-id="${author_id}">Delete</button>`;
 }
 
@@ -100,7 +111,10 @@ async function deleteAuthor(author_id: number): Promise<void> {
     if (!confirm('Are you sure you want to delete?')) return;
 
     try {
-        const res = await fetch(`/authors/${author_id}`, { method: 'DELETE' });
+        const res = await fetch(`/authors/${author_id}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
         if (res.ok) fetchAuthors(currentPage);
     } catch { }
 }
@@ -108,7 +122,10 @@ async function deleteAuthor(author_id: number): Promise<void> {
 tableBody?.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
 
-    if (target.classList.contains('edit-btn')) {
+    if (target.classList.contains('view-btn')) {
+        const id = Number(target.dataset.id);
+        window.location.href = `/authors/${id}`;
+    } else if (target.classList.contains('edit-btn')) {
         const id = Number(target.dataset.id);
         startEdit(id);
     } else if (target.classList.contains('save-btn')) {
@@ -134,7 +151,7 @@ form?.addEventListener('submit', async (e) => {
     try {
         const res = await fetch(`/authors`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ name_author: data.name.trim() }),
         });
         if (res.ok) {
@@ -144,4 +161,21 @@ form?.addEventListener('submit', async (e) => {
     } catch { }
 });
 
+const pagePath = window.location.pathname.split('/').pop();
+document.querySelectorAll('nav a').forEach(link => {
+    const href = link.getAttribute('href')?.split('/').pop();
+    if (href === pagePath) {
+        link.classList.add('active');
+    } else {
+        link.classList.remove('active');
+    }
+});
+
+
 fetchAuthors();
+
+const logoutButton = document.getElementById('logout-button') as HTMLButtonElement | null;
+logoutButton?.addEventListener('click', () => {
+    localStorage.removeItem('token');
+    window.location.href = '/';
+});

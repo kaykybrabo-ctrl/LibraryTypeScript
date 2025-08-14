@@ -1,17 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteB = deleteB;
+exports.deleteb = deleteb;
 const connection_1 = require("../DB/connection");
-async function deleteB(req, res) {
-    const book_id = parseInt(req.params.id);
-    if (isNaN(book_id)) {
-        return res.status(400).send();
-    }
+async function deleteb(req, res) {
+    const id = Number(req.params.id);
+    if (isNaN(id) || id <= 0)
+        return res.sendStatus(400);
     try {
-        await (0, connection_1.executeQuery)('DELETE FROM books WHERE book_id = ?', [book_id]);
+        const result = await (0, connection_1.executeQuery)('DELETE FROM books WHERE book_id = ?', [id]);
+        if (result.affectedRows === 0)
+            return res.sendStatus(404);
         res.sendStatus(200);
     }
-    catch (err) {
-        res.status(500).send();
+    catch {
+        res.sendStatus(500);
     }
 }

@@ -6,11 +6,13 @@ body {
 }
 
 header {
+    position: relative;
     background-color: #162c74;
     color: white;
     padding: 20px 0;
     text-align: center;
 }
+
 
 main {
     padding: 30px 20px;
@@ -113,7 +115,7 @@ nav a {
 }
 
 nav a.active {
-    color: #000000;
+    color: black;
 }
 
 .pagination button {
@@ -129,4 +131,18 @@ nav a.active {
     margin-top: 20px;
     font-size: 1.2em;
     color: #555;
+}
+
+#logout-button {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: white;
+    color: #162c74;
+    border: 1px solid #162c74;
+    padding: 6px 16px;
+    font-size: 14px;
+    font-weight: bold;
+    border-radius: 4px;
 }

@@ -1,25 +1,19 @@
 {
     "compilerOptions": {
-        "target": "es6",
-        "module": "es6",
-        "outDir": "./FRONTEND/assets",
-        "rootDir": "./FRONTEND/assets",
+        "target": "ES6",
+        "module": "ES6",
+        "outDir": "./FRONTEND/dist",
+        "rootDir": "./FRONTEND",
         "strict": true,
         "esModuleInterop": true,
         "moduleResolution": "node",
         "allowSyntheticDefaultImports": true,
         "noImplicitAny": true,
-        "noImplicitThis": true,
-        "strictNullChecks": true,
-        "strictFunctionTypes": true,
-        "strictBindCallApply": true,
-        "strictPropertyInitialization": true,
-        "strictBuiltinIteratorReturn": true,
-        "alwaysStrict": true,
-        "useUnknownInCatchVariables": true
+        "strictNullChecks": true
     },
     "include": [
-        "FRONTEND/assets/**/*.ts"
+        "FRONTEND/assets/**/*.ts",
+        "FRONTEND/interface/assets/**/*.ts"
     ],
     "exclude": [
         "node_modules"

@@ -3,16 +3,23 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.update = update;
 const connection_1 = require("../DB/connection");
 async function update(req, res) {
-    const book_id = parseInt(req.params.id);
-    const { title } = req.body;
-    if (isNaN(book_id) || !title) {
-        return res.status(400).send();
+    const id = Number(req.params.id);
+    let { name_author } = req.body;
+    if (!name_author || typeof name_author !== 'string' || name_author.trim() === '') {
+        return res.sendStatus(400);
     }
+    if (isNaN(id) || id <= 0) {
+        return res.sendStatus(400);
+    }
+    name_author = name_author.toLowerCase().replace(/\b\w/g, char => char.toUpperCase()).trim();
     try {
-        await (0, connection_1.executeQuery)('UPDATE books SET title = ? WHERE book_id = ?', [title, book_id]);
+        const result = await (0, connection_1.executeQuery)('UPDATE authors SET name_author = ? WHERE author_id = ?', [name_author, id]);
+        if (result.affectedRows === 0) {
+            return res.sendStatus(404);
+        }
         res.sendStatus(200);
     }
-    catch (err) {
-        res.status(500).send();
+    catch {
+        res.sendStatus(500);
     }
 }

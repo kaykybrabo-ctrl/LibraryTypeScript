@@ -13,14 +13,36 @@ const limit = 5;
 let currentSearchQuery = '';
 let authorOptions: Author[] = [];
 
+if (!localStorage.getItem('token')) {
+    window.location.href = '/';
+}
+
+function getAuthHeaders() {
+    const token = localStorage.getItem('token');
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token ?? ''}`
+    };
+}
+
 async function fetchBooks(page = 0, searchQuery = '') {
     const offset = page * limit;
     const url = `/books?limit=${limit}&offset=${offset}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''}`;
     const totalUrl = `/books/count${searchQuery ? `?search=${encodeURIComponent(searchQuery)}` : ''}`;
 
     try {
-        const [res, totalRes] = await Promise.all([fetch(url), fetch(totalUrl)]);
-        if (!res.ok || !totalRes.ok) return;
+        const [res, totalRes] = await Promise.all([
+            fetch(url, { headers: getAuthHeaders() }),
+            fetch(totalUrl, { headers: getAuthHeaders() })
+        ]);
+        if (!res.ok || !totalRes.ok) {
+            if (res.status === 401 || totalRes.status === 401) {
+                localStorage.removeItem('token');
+                window.location.href = '/';
+                return;
+            }
+            throw new Error('Failed to fetch books data');
+        }
 
         const books: Book[] = await res.json();
         const { total } = await totalRes.json();
@@ -56,13 +78,19 @@ function renderBooks(books: Book[]) {
             <td class="name">${getAuthorName(book.author_id)}</td>
             <td class="title">${book.title}</td>
             <td>
+                <button data-action="view">View</button>
                 <button data-action="edit">Edit</button>
                 <button data-action="delete">Delete</button>
             </td>
         `;
 
+        const viewBtn = row.querySelector('[data-action="view"]') as HTMLButtonElement;
         const editBtn = row.querySelector('[data-action="edit"]') as HTMLButtonElement;
         const deleteBtn = row.querySelector('[data-action="delete"]') as HTMLButtonElement;
+
+        viewBtn.addEventListener('click', () => {
+            window.location.href = `/books/${book.book_id}`;
+        });
 
         editBtn.addEventListener('click', () => startEditBook(book.book_id));
         deleteBtn.addEventListener('click', () => deleteBook(book.book_id));
@@ -143,12 +171,20 @@ async function saveEditBook(book_id: number) {
     try {
         const res = await fetch(`/books/${book_id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ author_id: Number(authorId), title })
         });
 
         if (res.ok) fetchBooks(currentPage, currentSearchQuery);
-    } catch { }
+        else if (res.status === 401) {
+            localStorage.removeItem('token');
+            window.location.href = '/';
+        } else {
+            alert('Failed to update book.');
+        }
+    } catch {
+        alert('Error updating book.');
+    }
 }
 
 function cancelEditBook(book_id: number, oldAuthorId: string, oldTitle: string) {
@@ -163,6 +199,12 @@ function cancelEditBook(book_id: number, oldAuthorId: string, oldTitle: string) 
     const actionsCell = row.querySelector('td:last-child') as HTMLElement;
     actionsCell.innerHTML = '';
 
+    const viewBtn = document.createElement('button');
+    viewBtn.textContent = 'View';
+    viewBtn.addEventListener('click', () => {
+        window.location.href = `/books/${book_id}`;
+    });
+
     const editBtn = document.createElement('button');
     editBtn.textContent = 'Edit';
     editBtn.addEventListener('click', () => startEditBook(book_id));
@@ -171,6 +213,7 @@ function cancelEditBook(book_id: number, oldAuthorId: string, oldTitle: string) 
     deleteBtn.textContent = 'Delete';
     deleteBtn.addEventListener('click', () => deleteBook(book_id));
 
+    actionsCell.appendChild(viewBtn);
     actionsCell.appendChild(editBtn);
     actionsCell.appendChild(deleteBtn);
 }
@@ -187,32 +230,60 @@ bookForm?.addEventListener('submit', async (e) => {
     try {
         const res = await fetch('/books', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ author_id, title: data.title.trim() })
         });
 
         if (res.ok) {
             bookForm.reset();
             fetchBooks(currentPage, currentSearchQuery);
+        } else if (res.status === 401) {
+            localStorage.removeItem('token');
+            window.location.href = '/';
+        } else {
+            alert('Failed to create book.');
         }
-    } catch { }
+    } catch {
+        alert('Error creating book.');
+    }
 });
 
 async function deleteBook(book_id: number) {
     if (!confirm('Are you sure you want to delete?')) return;
 
     try {
-        const res = await fetch(`/books/${book_id}`, { method: 'DELETE' });
+        const res = await fetch(`/books/${book_id}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
+
         if (res.ok) fetchBooks(currentPage, currentSearchQuery);
-    } catch { }
+        else if (res.status === 401) {
+            localStorage.removeItem('token');
+            window.location.href = '/';
+        } else {
+            alert('Failed to delete book.');
+        }
+    } catch {
+        alert('Error deleting book.');
+    }
 }
 
 async function populateAuthorSelect() {
     if (!authorSelect) return;
 
     try {
-        const res = await fetch('/authors?limit=9999&offset=0');
-        if (!res.ok) return;
+        const res = await fetch('/authors?limit=9999&offset=0', {
+            headers: getAuthHeaders()
+        });
+
+        if (!res.ok) {
+            if (res.status === 401) {
+                localStorage.removeItem('token');
+                window.location.href = '/';
+            }
+            return;
+        }
 
         const authors: Author[] = await res.json();
         authorOptions = authors;
@@ -225,8 +296,10 @@ async function populateAuthorSelect() {
             authorSelect.appendChild(option);
         }
     } catch {
-        authorSelect.innerHTML = '<option value="">Error loading authors</option>';
-        authorSelect.disabled = true;
+        if (authorSelect) {
+            authorSelect.innerHTML = '<option value="">Error loading authors</option>';
+            authorSelect.disabled = true;
+        }
     }
 }
 
@@ -236,5 +309,22 @@ searchForm?.addEventListener('submit', (e) => {
     fetchBooks(0, currentSearchQuery);
 });
 
+const pagePath = window.location.pathname.split('/').pop();
+document.querySelectorAll('nav a').forEach(link => {
+    const href = link.getAttribute('href')?.split('/').pop();
+    if (href === pagePath) {
+        link.classList.add('active');
+    } else {
+        link.classList.remove('active');
+    }
+});
+
+
 fetchBooks();
 populateAuthorSelect();
+
+const logoutButton = document.getElementById('logout-button') as HTMLButtonElement | null;
+logoutButton?.addEventListener('click', () => {
+    localStorage.removeItem('token');
+    window.location.href = '/';
+});
