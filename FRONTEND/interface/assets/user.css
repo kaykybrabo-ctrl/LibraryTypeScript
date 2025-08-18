@@ -1,6 +1,5 @@
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
     background-color: #f4f4f4;
     color: #333;
 }
@@ -38,7 +37,6 @@ header h1 {
 
 }
 
-
 button {
     background-color: #3498db;
     color: white;
@@ -48,7 +46,6 @@ button {
     cursor: pointer;
 
 }
-
 
 main {
     max-width: 900px;
