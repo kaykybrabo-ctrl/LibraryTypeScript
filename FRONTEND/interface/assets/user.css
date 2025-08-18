@@ -92,7 +92,6 @@ h2 {
     margin-top: 1rem;
     border: 1px solid #ccc;
     border-radius: 5px;
-    resize: vertical;
 }
 
 .book-card,
@@ -111,23 +110,8 @@ h2 {
 .favorite-card img {
     width: 80px;
     height: 120px;
-    object-fit: cover;
     border-radius: 4px;
     border: 1px solid #ccc;
-}
-
-.book-card-content,
-.favorite-card-content {
-    flex: 1;
-}
-
-.book-card h3,
-.favorite-card h3 {
-    margin: 0 0 0.5rem;
-}
-
-.book-actions button {
-    margin-right: 0.5rem;
 }
 
 
@@ -149,7 +133,6 @@ h2 {
 
 .return-btn {
     background-color: white;
-    ;
     color: red;
     border: none;
     padding: 0.4rem 0.4rem;

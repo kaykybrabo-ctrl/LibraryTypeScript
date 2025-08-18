@@ -1,5 +1,4 @@
 body {
-    font-family: Arial, sans-serif;
     background-color: #f0f2f5;
     display: flex;
     height: 100vh;
@@ -48,9 +47,6 @@ button {
     cursor: pointer;
 }
 
-button:hover {
-    background-color: #0056b3;
-}
 
 .error-message {
     color: red;
@@ -62,8 +58,4 @@ button:hover {
     display: flex;
     gap: 1rem;
     margin-top: 1.5rem;
-}
-
-.buttons button {
-    flex: 1;
 }

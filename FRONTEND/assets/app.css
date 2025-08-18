@@ -96,10 +96,6 @@ button[name="delete"] {
     font-size: 14px;
 }
 
-.inline {
-    display: inline;
-}
-
 nav {
     background-color: #162c74;
     padding: 10px;
@@ -137,12 +133,9 @@ nav a.active {
     position: absolute;
     right: 20px;
     top: 50%;
-    transform: translateY(-50%);
     background-color: white;
     color: #162c74;
-    border: 1px solid #162c74;
     padding: 6px 16px;
-    font-size: 14px;
     font-weight: bold;
     border-radius: 4px;
 }

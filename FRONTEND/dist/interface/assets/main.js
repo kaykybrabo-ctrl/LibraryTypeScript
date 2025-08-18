@@ -65,4 +65,4 @@ form === null || form === void 0 ? void 0 : form.addEventListener('submit', (e) 
 registerBtn === null || registerBtn === void 0 ? void 0 : registerBtn.addEventListener('click', () => {
     window.location.href = '/interface/register.html';
 });
-export { };
+export {};
