@@ -3,6 +3,11 @@ version: '3.8'
 services:
   app:
     build: .
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=12345678
+      - DB_NAME=library1
     volumes:
       - ./FRONTEND:/usr/src/app/FRONTEND
       - /usr/src/app/node_modules
