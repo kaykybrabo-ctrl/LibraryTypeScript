@@ -33,19 +33,14 @@ const storage = multer_1.default.diskStorage({
     destination: path_1.default.join(__dirname, '../FRONTEND/uploads'),
     filename: (_req, file, cb) => {
         cb(null, `${Date.now()}-${file.originalname}`);
-    },
+    }
 });
 const upload = (0, multer_1.default)({ storage });
 app.use(express_1.default.json());
 app.use((0, cors_1.default)({ origin: 'http://localhost:8080', credentials: true }));
-app.use((0, express_session_1.default)({
-    secret: 'your-secret-key',
-    resave: false,
-    saveUninitialized: false,
-    cookie: { secure: false },
-}));
+app.use((0, express_session_1.default)({ secret: 'your-secret-key', resave: false, saveUninitialized: false, cookie: { secure: false } }));
 app.use('/dist', express_1.default.static(path_1.default.join(__dirname, '../FRONTEND/dist')));
-app.use('/interface/assets', express_1.default.static(path_1.default.join(__dirname, '../FRONTEND/interface/assets')));
+app.use('/interface/assets', express_1.default.static(path_1.default.join(__dirname, '../FRONTEND/dist/interface/assets')));
 app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, '../FRONTEND/uploads')));
 app.use('/interface', express_1.default.static(path_1.default.join(__dirname, '../FRONTEND/interface'), { index: false }));
 app.use(express_1.default.static(path_1.default.join(__dirname, '../FRONTEND'), { index: false }));
@@ -162,20 +157,6 @@ app.post('/rent/:id', async (req, res) => {
         res.status(500).end();
     }
 });
-app.post('/return/:loanId', async (req, res) => {
-    const loanId = Number(req.params.loanId);
-    if (isNaN(loanId))
-        return res.status(400).end();
-    try {
-        const result = await (0, connection_1.executeQuery)('DELETE FROM loans WHERE loans_id = ?', [loanId]);
-        if (!result.affectedRows)
-            return res.status(404).end();
-        res.status(200).end();
-    }
-    catch {
-        res.status(500).end();
-    }
-});
 app.post('/favorite/:id', async (req, res) => {
     const bookId = Number(req.params.id);
     if (isNaN(bookId))
@@ -200,13 +181,13 @@ app.get('/users/favorite', async (req, res) => {
         return res.status(400).end();
     try {
         const results = await (0, connection_1.executeQuery)(`
-      SELECT b.book_id, b.title, b.description, b.photo, a.name_author AS author_name
-      FROM users u
-      LEFT JOIN books b ON u.favorite_book_id = b.book_id
-      LEFT JOIN authors a ON b.author_id = a.author_id
-      WHERE u.username = ?
-      LIMIT 1
-    `, [username]);
+            SELECT b.book_id, b.title, b.description, b.photo, a.name_author AS author_name
+            FROM users u
+            LEFT JOIN books b ON u.favorite_book_id = b.book_id
+            LEFT JOIN authors a ON b.author_id = a.author_id
+            WHERE u.username = ?
+            LIMIT 1
+        `, [username]);
         if (!results.length || !results[0].book_id)
             return res.status(404).end();
         res.json(results[0]);
@@ -215,15 +196,51 @@ app.get('/users/favorite', async (req, res) => {
         res.status(500).end();
     }
 });
+app.get('/loans', async (req, res) => {
+    const username = req.query.username;
+    if (!username)
+        return res.status(400).end();
+    try {
+        const userResult = await (0, connection_1.executeQuery)('SELECT id FROM users WHERE username = ?', [username]);
+        if (!userResult.length)
+            return res.status(404).end();
+        const loans = await (0, connection_1.executeQuery)(`
+            SELECT l.loans_id, l.loan_date,
+                   b.book_id, b.title, b.photo, b.description
+            FROM loans l
+            JOIN books b ON l.book_id = b.book_id
+            WHERE l.user_id = ?
+            ORDER BY l.loan_date DESC
+        `, [userResult[0].id]);
+        res.json(loans);
+    }
+    catch {
+        res.status(500).end();
+    }
+});
+app.post('/return/:loanId', async (req, res) => {
+    const loanId = Number(req.params.loanId);
+    if (isNaN(loanId))
+        return res.status(400).end();
+    try {
+        const result = await (0, connection_1.executeQuery)('DELETE FROM loans WHERE loans_id = ?', [loanId]);
+        if (!result.affectedRows)
+            return res.status(404).end();
+        res.status(200).end();
+    }
+    catch {
+        res.status(500).end();
+    }
+});
 app.get('/reviews', async (_req, res) => {
     try {
         const reviews = await (0, connection_1.executeQuery)(`
-      SELECT r.*, u.username, b.title as bookTitle 
-      FROM reviews r
-      JOIN users u ON r.user_id = u.id
-      JOIN books b ON r.book_id = b.book_id
-      ORDER BY r.review_date DESC
-    `);
+            SELECT r.*, u.username, b.title as bookTitle 
+            FROM reviews r
+            JOIN users u ON r.user_id = u.id
+            JOIN books b ON r.book_id = b.book_id
+            ORDER BY r.review_date DESC
+        `);
         res.json(reviews);
     }
     catch {
