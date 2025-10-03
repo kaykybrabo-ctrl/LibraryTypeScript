@@ -261,7 +261,7 @@ app.post('/reviews', async (req, res) => {
         await (0, connection_1.executeQuery)('INSERT INTO reviews (book_id, user_id, rating, comment) VALUES (?, ?, ?, ?)', [book_id, user_id, rating, comment || '']);
         res.status(201).end();
     }
-    catch {
+    catch { 
         res.status(500).end();
     }
 });
